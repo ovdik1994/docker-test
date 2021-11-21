@@ -1,0 +1,73 @@
+version: "3.8"
+
+services:
+  # FRONT
+  ovdk-frontend:
+    container_name: ovdk-frontend
+    build:
+      context: ./frontend
+    restart: always
+    ports:
+      - 3000:3000
+    depends_on:
+      - ovdk-backend
+
+  # BACK
+  ovdk-backend:
+    container_name: ovdk-backend
+    build:
+      context: ./backend
+    restart: always
+    environment:
+      - PORT=3001
+    ports:
+      - 3001:3001
+    depends_on:
+      - ovdk-mysql
+      - ovdk-phpmyadmin
+
+  # MYSQL
+  ovdk-mysql:
+    image: mysql:5.7.36
+    container_name: ovdk-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root_pass
+      MYSQL_PASSWORD: pass
+      MYSQL_DATABASE: ovdk_db
+    volumes:
+      - ovdkdb:/usr/src/lib/mysql
+    networks:
+      - ovdknetwork
+
+  # PHPMYADMIN
+  ovdk-phpmyadmin:
+    image: phpmyadmin:5.1.1
+    container_name: ovdk-phpmyadmin
+    restart: always
+    environment:
+      PMA_HOST: ovdk-mysql
+      MYSQL_ROOT_PASSWORD: root_pass
+    ports:
+      - 3003:80
+    depends_on:
+      - ovdk-mysql
+    networks:
+      - ovdknetwork
+
+  # NGINX
+  ovdk-nginx:
+    image: nginx:stable-alpine
+    container_name: ovdk-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/nginx.conf
+    depends_on:
+      - ovdk-frontend
+
+volumes:
+  ovdkdb:
+
+networks:
+  ovdknetwork:
